@@ -463,7 +463,7 @@ void control_init(void)
 
   //position control
   //y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
-  y_pid.set_parameter (0.0000001, 100000, 0.0, 0.125, 0.03);
+  y_pid.set_parameter (0.0001, 100000, 0.0, 0.125, 0.03);
 
 }
 
@@ -1111,14 +1111,14 @@ void linetrace(void)
     //Yaw loop
     //Y_con
     trace_y_err = ( y_ref - Line_range);
-    psi_ref = y_pid.update(trace_y_err);
-      
+    Psi_ref = y_pid.update(trace_y_err);
+    
     //saturation Psi_ref
-    if ( psi_ref >= 10*pi/180 )
+    if ( Psi_ref >= 10*pi/180 )
     {
       Psi_ref = 10*pi/180;
     }
-    else if ( psi_ref <= -10*pi/180 )
+    else if ( Psi_ref <= -10*pi/180 )
     {
       Psi_ref = -10*pi/180;
     }
@@ -1127,14 +1127,14 @@ void linetrace(void)
     //Roll loop
     //V_con
     trace_v_err = ( v_ref - Line_velocity);
-    phi_ref = v_pid.update(trace_v_err);
+    Phi_ref = v_pid.update(trace_v_err);
 
     //saturation Phi_ref
-    if ( phi_ref >= 5*pi/180 )
+    if ( Phi_ref >= 5*pi/180 )
     {
       Phi_ref = 5*pi/180;
     }
-    else if ( phi_ref <= -5*pi/180 )
+    else if ( Phi_ref <= -5*pi/180 )
     {
       Phi_ref = -5*pi/180;
     }  
