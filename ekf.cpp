@@ -188,7 +188,7 @@ float u2 = -w0 * delta_phi * h_horizontal;
 float u3 = (delta_r * h_horizontal)/cos(theta0);
 //システムノイズ
 float q1 = 0.0001;
-float q2 = 0.02;
+float q2 = 0.002;
 float q3 = 0.01;
 //観測の共分散
 float r1 = 0.000001;
