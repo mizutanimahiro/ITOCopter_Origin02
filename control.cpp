@@ -974,13 +974,13 @@ void angle_control(void)
     
       if(Flight_mode == LINETRACE && i2c_connect == 1) {
         // auto_mode_count = 1;
-        psi_pid.set_parameter  ( 10.0, 800, 0.00, 0.125, 0.01);
-        if(Linetrace_counter_for_control>4)
+        psi_pid.set_parameter  ( 6.0, 1000, 0.001, 0.125, 0.01);
+        if(Linetrace_counter_for_control>3)
         {
           linetrace();
-          Litrace_counter_for_control=0;
+          Linetrace_counter_for_control=0;
         }
-        Lintrace_counter_for_control++;
+        Linetrace_counter_for_control++;
       }
       else{
         Psi = 0;
@@ -1113,17 +1113,17 @@ void linetrace(void)
 
 
     //前進（ピッチ角の制御)
-    Theta_ref = -0.05*(pi/180);
+    Theta_ref = -0.1*(pi/180);
 
 
     if (Linetrace_counter > 300)
     {
-      y_pid.set_parameter (0.0001, 1000, 0.002, 0.125, 0.03);
-      Linetrace_counter = 0;
+      y_pid.set_parameter (0.001, 1000, 0.002, 0.125, 0.03);
+      Linetrace_counter = 300;
     }
     else
     {
-      y_pid.set_parameter (0.00001, 1000, 0.002, 0.125, 0.03);
+      y_pid.set_parameter (0.0001, 1000, 0.002, 0.125, 0.03);
     }
     Linetrace_counter++;
 
