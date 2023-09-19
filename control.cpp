@@ -1218,11 +1218,11 @@ void logging(void)
 
       Logdata[LogdataCounter++]=r_pid.m_integral;//m_filter_output;    //31
       Logdata[LogdataCounter++]=phi_pid.m_integral;//m_filter_output;  //32
-      Logdata[LogdataCounter++]=theta_pid.m_integral;//m_filter_output;//33
-      Logdata[LogdataCounter++]=Pbias;                    //34
-      Logdata[LogdataCounter++]=Qbias;                    //35
+      Logdata[LogdataCounter++]=angle_diff;//theta_pid.m_integral;//m_filter_output;//33
+      Logdata[LogdataCounter++]=x_alpha;//Pbias;                    //34
+      Logdata[LogdataCounter++]=x_diff;//Qbias;                    //35
 
-      Logdata[LogdataCounter++]=Rbias;                    //36
+      Logdata[LogdataCounter++]=x_diff_dash;//Rbias;                    //36
       Logdata[LogdataCounter++]=Line_velocity;                    //37
       Logdata[LogdataCounter++]=Line_range;                 //38
 
