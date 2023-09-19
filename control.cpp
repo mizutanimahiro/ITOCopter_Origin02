@@ -71,8 +71,8 @@ float x_alpha = 0;
 //Sensor data
 float Ax,Ay,Az,Wp,Wq,Wr,Mx,My,Mz,Mx0,My0,Mz0,Mx_ave,My_ave,Mz_ave;
 float Acc_norm=0.0;
-float Line_range;
-float Line_velocity;
+float Line_range=0.0;
+float Line_velocity=0.0;
 
 //Initial data
 float rate_limit = 180.0;
@@ -101,7 +101,7 @@ float T_ref;
 float T_stick;
 float Pbias=0.0,Qbias=0.0,Rbias=0.0;
 float Phi_bias=0.0,Theta_bias=0.0,Psi_bias=0.0;  
-float Phi,Theta,Psi;
+float Phi,Theta,Psi=0.0;
 float Phi_ref=0.0,Theta_ref=0.0,Psi_ref=0.0;
 float Elevator_center=0.0, Aileron_center=0.0, Rudder_center=0.0;
 float Pref=0.0,Qref=0.0,Rref=0.0;
@@ -137,6 +137,7 @@ uint8_t LockMode=0;
 float Disable_duty =0.1;
 float Flight_duty  =0.18;//0.2/////////////////
 uint8_t OverG_flag = 0;
+unsigned short Linetrace_counter = 0;
 
 //PID object and etc.
 Filter acc_filter;
@@ -149,6 +150,9 @@ PID psi_pid;
 PID v_pid;
 PID y_pid;
 
+Filter Range_filter;
+Filter Angle_filter;
+Filter Velocity_filter;
 
 void loop_400Hz(void);
 void rate_control(void);
@@ -440,12 +444,15 @@ void send_data_via_uart(const char* data) {
 void control_init(void)
 {
   acc_filter.set_parameter(0.005, 0.0025);
+  Range_filter.set_parameter(0.05, 0.025);
+  Angle_filter.set_parameter(0.05, 0.025);
+  Velocity_filter.set_parameter(0.05, 0.025);
+
   //Rate control
   p_pid.set_parameter( 2.5, 100.0, 0.009, 0.125, 0.0025);//(2.2, 5, 0.01)
   q_pid.set_parameter( 2.5, 100.0, 0.009, 0.125, 0.0025);//(1.5, 1, 0.01)
-  r_pid.set_parameter( 3.1, 1, 0.01, 0.125, 0.0025);//(3.1, 1, 0.01)
+  r_pid.set_parameter( 3.5, 10.0, 0.009, 0.125, 0.0025);//(3.1, 1, 0.01)
   //Angle control
-
   phi_pid.set_parameter  ( 8.0, 20.0, 0.007, 0.125, 0.01);//6.0
   theta_pid.set_parameter( 8.0, 20.0, 0.007, 0.125, 0.01);//6.0
   psi_pid.set_parameter  ( 0, 1000, 0.01, 0.125, 0.01);
@@ -456,12 +463,15 @@ void control_init(void)
   //   psi_pid.set_parameter  ( 0, 1000, 0.01, 0.125, 0.01);
   // }
 
- //velocity control
- v_pid.set_parameter (0.001, 100000, 0.0, 0.125, 0.03);
+  //Linetrace
+  //velocity control
+  //v_pid.set_parameter (0.001, 100000, 0.0, 0.125, 0.03);
+  v_pid.set_parameter (0.0002, 100000, 0.0, 0.125, 0.03);
 
+  //position control
+  //y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
+  //y_pid.set_parameter (0.0001, 1000, 0.002, 0.125, 0.03);
 
- //position control
- y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
 }
 
 
@@ -939,12 +949,13 @@ void angle_control(void)
     e33 = q0*q0 - q1*q1 - q2*q2 + q3*q3;
     Phi = atan2(e23, e33);
     Theta = atan2(-e13, sqrt(e23*e23+e33*e33));
-    Psi = atan2(e12,e11);
+    //Psi = atan2(e12,e11);
     //Psi = Xn_est_3;
 
     //Get angle ref (manual flight) 
     if (1)
     {
+      //Rockingwing
       if(Flight_mode != ROCKING){
         Phi_ref   =  Phi_trim + 0.3 *M_PI*(float)(Chdata[3] - (CH4MAX+CH4MIN)*0.5)*2/(CH4MAX-CH4MIN);
       }
@@ -952,25 +963,28 @@ void angle_control(void)
         Phi_ref = rocking_wings(Phi_ref);
       }
 
+      //ここは数行後にあるlinetrace関数で上書きされる
       Theta_ref =  Theta_trim + 0.3 *M_PI*(float)(Chdata[1] - (CH2MAX+CH2MIN)*0.5)*2/(CH2MAX-CH2MIN);
-
       Psi_ref   =  0.8 *M_PI*(float)(Chdata[0] - (CH1MAX+CH1MIN)*0.5)*2/(CH1MAX-CH1MIN);
 
-      phi_err   = Phi_ref   - (Phi   - Phi_bias);
-      theta_err = Theta_ref - (Theta - Theta_bias);
-      psi_err   = Psi_ref   - (Psi   - Psi_bias);
+      //phi_err   = Phi_ref   - (Phi   - Phi_bias);
+      //theta_err = Theta_ref - (Theta - Theta_bias);
+      //psi_err   = Psi_ref   - (Psi   - Psi_bias);
     
-   
-
-    if(Flight_mode == LINETRACE && i2c_connect == 1) {
-      // auto_mode_count = 1;
-      psi_pid.set_parameter  ( 3.0, 800, 0.001, 0.125, 0.01);
-      linetrace();
-    }
-    else{
-       psi_pid.set_parameter  ( 0, 1000, 0.01, 0.125, 0.01);
-      auto_mode_count = 1;
-    }
+      if(Flight_mode == LINETRACE && i2c_connect == 1) {
+        // auto_mode_count = 1;
+        psi_pid.set_parameter  ( 10.0, 800, 0.00, 0.125, 0.01);
+        linetrace();
+      }
+      else{
+        Psi = 0;
+        Linetrace_counter = 0;
+        psi_pid.set_parameter( 0, 100000, 0.01, 0.125, 0.01);
+        auto_mode_count = 1;
+        Range_filter.reset();
+        Angle_filter.reset();
+        Velocity_filter.reset();
+      }
     }
     
     //PID Control
@@ -1020,8 +1034,6 @@ void angle_control(void)
       Rref = -(rate_limit*pi/180);
     }
       
-   
-
     //saturation Pref
     if (Pref >= (rate_limit*pi/180))
     {
@@ -1070,6 +1082,7 @@ float rocking_wings(float stick)
 }
 
 // --------------------------------ライントレース--------------------------------------
+
 void linetrace(void)
 {
   //離陸
@@ -1093,8 +1106,21 @@ void linetrace(void)
     Hovering();
 
 
-    //前進（ピッチ角の制御） 
-    Theta_ref = -0.1*(pi/180);
+    //前進（ピッチ角の制御)
+    Theta_ref = -0.05*(pi/180);
+
+
+    if (Linetrace_counter > 300)
+    {
+      y_pid.set_parameter (0.0001, 1000, 0.002, 0.125, 0.03);
+      Linetrace_counter = 0;
+    }
+    else
+    {
+      y_pid.set_parameter (0.00001, 1000, 0.002, 0.125, 0.03);
+    }
+    Linetrace_counter++;
+
     
     //目標値との誤差
     float trace_phi_err;
@@ -1111,32 +1137,32 @@ void linetrace(void)
     //Yaw loop
     //Y_con
     trace_y_err = ( y_ref - Line_range);
-    psi_ref = y_pid.update(trace_y_err);
-      
+    Psi_ref = y_pid.update(trace_y_err);
+    
     //saturation Psi_ref
-    if ( psi_ref >= 40*pi/180 )
+    if ( Psi_ref >= 10*pi/180 )
     {
-      Psi_ref = 40*pi/180;
+      Psi_ref = 10*pi/180;
     }
-    else if ( psi_ref <= -40*pi/180 )
+    else if ( Psi_ref <= -10*pi/180 )
     {
-      Psi_ref = -40*pi/180;
+      Psi_ref = -10*pi/180;
     }
 
     // printf("phi_ref:%f", Phi_ref);
     //Roll loop
     //V_con
     trace_v_err = ( v_ref - Line_velocity);
-    phi_ref = v_pid.update(trace_v_err);
+    Phi_ref = v_pid.update(trace_v_err);
 
     //saturation Phi_ref
-    if ( phi_ref >= 60*pi/180 )
+    if ( Phi_ref >= 5*pi/180 )
     {
-      Phi_ref = 60*pi/180;
+      Phi_ref = 5*pi/180;
     }
-    else if ( phi_ref <= -60*pi/180 )
+    else if ( Phi_ref <= -5*pi/180 )
     {
-      Phi_ref = -60*pi/180;
+      Phi_ref = -5*pi/180;
     }  
 
 
@@ -1218,11 +1244,11 @@ void logging(void)
 
       Logdata[LogdataCounter++]=r_pid.m_integral;//m_filter_output;    //31
       Logdata[LogdataCounter++]=phi_pid.m_integral;//m_filter_output;  //32
-      Logdata[LogdataCounter++]=theta_pid.m_integral;//m_filter_output;//33
-      Logdata[LogdataCounter++]=Pbias;                    //34
-      Logdata[LogdataCounter++]=Qbias;                    //35
+      Logdata[LogdataCounter++]=angle_diff;//theta_pid.m_integral;//m_filter_output;//33
+      Logdata[LogdataCounter++]=x_alpha;//Pbias;                    //34
+      Logdata[LogdataCounter++]=x_diff;//Qbias;                    //35
 
-      Logdata[LogdataCounter++]=Rbias;                    //36
+      Logdata[LogdataCounter++]=x_diff_dash;//Rbias;                    //36
       Logdata[LogdataCounter++]=Line_velocity;                    //37
       Logdata[LogdataCounter++]=Line_range;                 //38
 
@@ -1324,11 +1350,16 @@ void processReceiveData(){
     if (token != NULL){
       line_number = atof(token);
     }
+    x_diff = -x_diff;
+    angle_diff = -angle_diff*M_PI/180.0;
     x_alpha = atan2(x_diff,118);
-    x_diff_dash = 700 * tan(Phi - x_alpha);
+    x_diff_dash = 700 * tan(Phi + x_alpha);
+    
     Kalman_holizontal(x_diff_dash,angle_diff,(Wp - Pbias),(Wr - Rbias),(Phi - Phi_bias));
-    Line_range = Xn_est_2; //横ずれ
-    Line_velocity = Xn_est_1; //速度
+    Line_velocity = Velocity_filter.update(Xn_est_1); //速度
+    Line_range = Range_filter.update(Xn_est_2); //横ずれ
+    Psi = Angle_filter.update(Xn_est_3);//ラインとの角度
+
     // current_time = time_us_64();
     //printf("x : %9.6f\n",x_diff);
     // printf("angle : %9.6f\n",angle_diff);

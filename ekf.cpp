@@ -187,12 +187,12 @@ float u1 = ((-u0 * delta_r) + (w0 * delta_p) + (g * cos(theta0) * delta_phi)) * 
 float u2 = -w0 * delta_phi * h_horizontal;
 float u3 = (delta_r * h_horizontal)/cos(theta0);
 //システムノイズ
-float q1 = 0.1;
-float q2 = 0.15;
-float q3 = 0.1;
+float q1 = 0.01;
+float q2 = 0.0015;
+float q3 = 0.01;
 //観測の共分散
-float r1 = 0.0001;
-float r2 = 0.01;
+float r1 = 0.000001;
+float r2 = 0.001;
 
 
 float initialize( Matrix<float, 2 ,2> &Sigma_Yn_est,
@@ -286,18 +286,22 @@ float Kalman_holizontal(float camera_y,float camera_psi,float deltaP,float delta
   K31 = (p32_pre * s_i11) + (p33_pre * s_i21);
   K32 = (p32_pre * s_i12) + (p33_pre * s_i22);
 
+
   //状態の推定
   Xn_est_1 = Xn_pre_1 + (K11*e1 )+ (K12*e2); //速度
   Xn_est_2 = Xn_pre_2 + (K21*e1) + (K22*e2);  //横ズレ
   Xn_est_3 = Xn_pre_3 + (K31*e1) + (K32*e2);  //角度ズレ
 
+
   //誤差の共分散の推定
   p11_est = p11_pre - (K11*p21_pre) -(K12*p31_pre);
   p12_est = p12_pre - (K11*p22_pre) -(K12*p32_pre);
   p13_est = p13_pre - (K11*p23_pre) - (K12*p33_pre);
+
   p21_est = p21_pre * (1 - K21) - (K22*p31_pre);
   p22_est = p22_pre * (1 - K21) - (K22*p32_pre); 
   p23_est = p23_pre * (1 - K21) - (K22*p33_pre);
+
   p31_est = -(K31*p21_pre) + (p31_pre*(1 - K32));
   p32_est = -(K31*p22_pre) + (p32_pre*(1 - K32));
   p33_est = -(K31*p23_pre) + (p33_pre*(1 - K32));
