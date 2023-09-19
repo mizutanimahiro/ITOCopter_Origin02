@@ -463,7 +463,7 @@ void control_init(void)
 
   //position control
   //y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
-  y_pid.set_parameter (0.0001, 100000, 0.0, 0.125, 0.03);
+  y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
 
 }
 
@@ -966,7 +966,7 @@ void angle_control(void)
     
       if(Flight_mode == LINETRACE && i2c_connect == 1) {
         // auto_mode_count = 1;
-        psi_pid.set_parameter  ( 3.0, 800, 0.001, 0.125, 0.01);
+        psi_pid.set_parameter  ( 10.0, 800, 0.00, 0.125, 0.01);
         linetrace();
       }
       else{
