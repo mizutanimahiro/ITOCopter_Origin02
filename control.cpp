@@ -150,6 +150,9 @@ PID psi_pid;
 PID v_pid;
 PID y_pid;
 
+Filter Range_filter;
+Filter Angle_filter;
+Filter Velocity_filter;
 
 void loop_400Hz(void);
 void rate_control(void);
@@ -441,6 +444,10 @@ void send_data_via_uart(const char* data) {
 void control_init(void)
 {
   acc_filter.set_parameter(0.005, 0.0025);
+  Range_filter.set_parameter(0.1, 0.025);
+  Angle_filter.set_parameter(0.1, 0.025);
+  Velocity_filter.set_parameter(0.1, 0.025);
+
   //Rate control
   p_pid.set_parameter( 2.5, 100.0, 0.009, 0.125, 0.0025);//(2.2, 5, 0.01)
   q_pid.set_parameter( 2.5, 100.0, 0.009, 0.125, 0.0025);//(1.5, 1, 0.01)
@@ -464,7 +471,7 @@ void control_init(void)
 
   //position control
   //y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
-  y_pid.set_parameter (0.015, 1000, 0.000, 0.125, 0.03);
+  y_pid.set_parameter (0.01, 1000, 0.000, 0.125, 0.03);
 
 }
 
@@ -967,13 +974,16 @@ void angle_control(void)
     
       if(Flight_mode == LINETRACE && i2c_connect == 1) {
         // auto_mode_count = 1;
-        psi_pid.set_parameter  ( 10.0, 800, 0.00, 0.125, 0.01);
+        psi_pid.set_parameter  ( 7.0, 800, 0.00, 0.125, 0.01);
         linetrace();
       }
       else{
         Linetrace_counter = 0;
         psi_pid.set_parameter  ( 0, 100000, 0.01, 0.125, 0.01);
         auto_mode_count = 1;
+        Range_filter.reset();
+        Angle_filter.reset();
+        Velocity_filter.reset();
       }
     }
     
@@ -1072,6 +1082,7 @@ float rocking_wings(float stick)
 }
 
 // --------------------------------ライントレース--------------------------------------
+
 void linetrace(void)
 {
   //離陸
@@ -1096,13 +1107,16 @@ void linetrace(void)
 
 
     //前進（ピッチ角の制御)
+    Theta_ref = -0.1*(pi/180);
+#if 0
+
     if (Linetrace_counter > 300)
     {
       Linetrace_counter = 300;
       Theta_ref = -0.1*(pi/180);
     }
     Linetrace_counter++;
-
+#endif
     
     //目標値との誤差
     float trace_phi_err;
@@ -1338,9 +1352,9 @@ void processReceiveData(){
     x_diff_dash = 700 * tan(Phi + x_alpha);
     
     Kalman_holizontal(x_diff_dash,angle_diff,(Wp - Pbias),(Wr - Rbias),(Phi - Phi_bias));
-    Line_velocity = Xn_est_1; //速度
-    Line_range = Xn_est_2; //横ずれ
-    Psi = Xn_est_3;//ラインとの角度
+    Line_velocity = Velocity_filter.update(Xn_est_1); //速度
+    Line_range = Range_filter.update(Xn_est_2); //横ずれ
+    Psi = Angle_filter.update(Xn_est_3);//ラインとの角度
 
     // current_time = time_us_64();
     //printf("x : %9.6f\n",x_diff);
