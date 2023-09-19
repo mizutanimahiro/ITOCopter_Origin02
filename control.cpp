@@ -463,7 +463,7 @@ void control_init(void)
 
   //position control
   //y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
-  y_pid.set_parameter (0.00001, 100000, 0.0, 0.125, 0.03);
+  y_pid.set_parameter (0.0000001, 100000, 0.0, 0.125, 0.03);
 
 }
 
@@ -1114,13 +1114,13 @@ void linetrace(void)
     psi_ref = y_pid.update(trace_y_err);
       
     //saturation Psi_ref
-    if ( psi_ref >= 40*pi/180 )
+    if ( psi_ref >= 10*pi/180 )
     {
-      Psi_ref = 40*pi/180;
+      Psi_ref = 10*pi/180;
     }
-    else if ( psi_ref <= -40*pi/180 )
+    else if ( psi_ref <= -10*pi/180 )
     {
-      Psi_ref = -40*pi/180;
+      Psi_ref = -10*pi/180;
     }
 
     // printf("phi_ref:%f", Phi_ref);
@@ -1325,7 +1325,7 @@ void processReceiveData(){
       line_number = atof(token);
     }
     x_diff = -x_diff;
-    angle_diff = -angle_diff;
+    angle_diff = -angle_diff*M_PI/180.0;
     x_alpha = atan2(x_diff,118);
     x_diff_dash = 700 * tan(Phi + x_alpha);
     
