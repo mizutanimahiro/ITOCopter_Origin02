@@ -93,6 +93,7 @@ uint16_t RateControlCounter=0;
 uint16_t BiasCounter=0;
 uint16_t LedBlinkCounter=0;
 uint16_t LineTraceCounter = 0;
+uint16_t Linetrace_counter_for_control = 0;
 
 //Control 
 float FR_duty, FL_duty, RR_duty, RL_duty;
@@ -357,14 +358,14 @@ void loop_400Hz(void)
       //Angle Control (100Hz)
       sem_release(&sem);
     }
-    if(LineTraceCounter == 10)
-    {
-      LineTraceCounter = 0;
-      //linetrace (40Hz)
-      if (Line_trace_flag == 1){
-        linetrace();
-      }
-    }
+    //if(LineTraceCounter == 10)
+    //{
+    //  LineTraceCounter = 0;
+    //  //linetrace (40Hz)
+    //  if (Line_trace_flag == 1){
+    //    linetrace();
+    //  }
+    //}
     AngleControlCounter++;
     LineTraceCounter ++;
   }
@@ -974,7 +975,12 @@ void angle_control(void)
       if(Flight_mode == LINETRACE && i2c_connect == 1) {
         // auto_mode_count = 1;
         psi_pid.set_parameter  ( 10.0, 800, 0.00, 0.125, 0.01);
-        linetrace();
+        if(Linetrace_counter_for_control>4)
+        {
+          linetrace();
+          Litrace_counter_for_control=0;
+        }
+        Lintrace_counter_for_control++;
       }
       else{
         Psi = 0;
