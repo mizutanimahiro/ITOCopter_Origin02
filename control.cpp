@@ -445,9 +445,9 @@ void send_data_via_uart(const char* data) {
 void control_init(void)
 {
   acc_filter.set_parameter(0.005, 0.0025);
-  Range_filter.set_parameter(0.05, 0.025);
-  Angle_filter.set_parameter(0.05, 0.025);
-  Velocity_filter.set_parameter(0.05, 0.025);
+  Range_filter.set_parameter(0.08, 0.025);
+  Angle_filter.set_parameter(0.08, 0.025);
+  Velocity_filter.set_parameter(0.08, 0.025);
 
   //Rate control
   p_pid.set_parameter( 2.5, 100.0, 0.009, 0.125, 0.0025);//(2.2, 5, 0.01)
@@ -467,7 +467,7 @@ void control_init(void)
   //Linetrace
   //velocity control
   //v_pid.set_parameter (0.001, 100000, 0.0, 0.125, 0.03);
-  v_pid.set_parameter (0.0002, 100000, 0.0, 0.125, 0.03);
+  v_pid.set_parameter (0.0002, 100000, 0.01, 0.125, 0.03);
 
   //position control
   //y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
@@ -958,15 +958,12 @@ void angle_control(void)
     {
       //Rockingwing
       if(Flight_mode != ROCKING){
-        Phi_ref   =  Phi_trim + 0.3 *M_PI*(float)(Chdata[3] - (CH4MAX+CH4MIN)*0.5)*2/(CH4MAX-CH4MIN);
+        //Phi_ref   =  Phi_trim + 0.3 *M_PI*(float)(Chdata[3] - (CH4MAX+CH4MIN)*0.5)*2/(CH4MAX-CH4MIN);
       }
       else if(Flight_mode == ROCKING){
         Phi_ref = rocking_wings(Phi_ref);
       }
 
-      //ここは数行後にあるlinetrace関数で上書きされる
-      Theta_ref =  Theta_trim + 0.3 *M_PI*(float)(Chdata[1] - (CH2MAX+CH2MIN)*0.5)*2/(CH2MAX-CH2MIN);
-      Psi_ref   =  0.8 *M_PI*(float)(Chdata[0] - (CH1MAX+CH1MIN)*0.5)*2/(CH1MAX-CH1MIN);
 
       //phi_err   = Phi_ref   - (Phi   - Phi_bias);
       //theta_err = Theta_ref - (Theta - Theta_bias);
@@ -974,7 +971,7 @@ void angle_control(void)
     
       if(Flight_mode == LINETRACE && i2c_connect == 1) {
         // auto_mode_count = 1;
-        psi_pid.set_parameter  ( 6.0, 1000, 0.001, 0.125, 0.01);
+        psi_pid.set_parameter  ( 10.0, 1000, 0.01, 0.125, 0.01);
         if(Linetrace_counter_for_control>3)
         {
           linetrace();
@@ -983,7 +980,12 @@ void angle_control(void)
         Linetrace_counter_for_control++;
       }
       else{
-        Psi = 0;
+        if(Flight_mode != ROCKING){
+          Phi_ref   =  Phi_trim + 0.3 *M_PI*(float)(Chdata[3] - (CH4MAX+CH4MIN)*0.5)*2/(CH4MAX-CH4MIN);
+        }
+        Theta_ref =  Theta_trim + 0.3 *M_PI*(float)(Chdata[1] - (CH2MAX+CH2MIN)*0.5)*2/(CH2MAX-CH2MIN);
+        Psi_ref   =  0.8 *M_PI*(float)(Chdata[0] - (CH1MAX+CH1MIN)*0.5)*2/(CH1MAX-CH1MIN);
+        Psi = 0.0;
         Linetrace_counter = 0;
         psi_pid.set_parameter( 0, 100000, 0.01, 0.125, 0.01);
         auto_mode_count = 1;
@@ -1113,21 +1115,8 @@ void linetrace(void)
 
 
     //前進（ピッチ角の制御)
-    Theta_ref = -0.1*(pi/180);
-
-
-    if (Linetrace_counter > 300)
-    {
-      y_pid.set_parameter (0.001, 1000, 0.002, 0.125, 0.03);
-      Linetrace_counter = 300;
-    }
-    else
-    {
-      y_pid.set_parameter (0.0001, 1000, 0.002, 0.125, 0.03);
-    }
-    Linetrace_counter++;
-
-    
+    Theta_ref = -0.05*(pi/180);
+  
     //目標値との誤差
     float trace_phi_err;
     float trace_psi_err;
@@ -1143,16 +1132,18 @@ void linetrace(void)
     //Yaw loop
     //Y_con
     trace_y_err = ( y_ref - Line_range);
+    //Psi_ref   =  0.3 *M_PI*(float)(Chdata[0] - (CH1MAX+CH1MIN)*0.5)*2/(CH1MAX-CH1MIN);
+    y_pid.set_parameter (0.0002, 1000, 0.002, 0.125, 0.03);
     Psi_ref = y_pid.update(trace_y_err);
     
     //saturation Psi_ref
-    if ( Psi_ref >= 10*pi/180 )
+    if ( Psi_ref >= 30*pi/180 )
     {
-      Psi_ref = 10*pi/180;
+      Psi_ref = 30*pi/180;
     }
-    else if ( Psi_ref <= -10*pi/180 )
+    else if ( Psi_ref <= -30*pi/180 )
     {
-      Psi_ref = -10*pi/180;
+      Psi_ref = -30*pi/180;
     }
 
     // printf("phi_ref:%f", Phi_ref);
