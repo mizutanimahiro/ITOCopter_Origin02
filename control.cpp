@@ -137,6 +137,7 @@ uint8_t LockMode=0;
 float Disable_duty =0.1;
 float Flight_duty  =0.18;//0.2/////////////////
 uint8_t OverG_flag = 0;
+unsigned short Linetrace_counter = 0;
 
 //PID object and etc.
 Filter acc_filter;
@@ -459,11 +460,11 @@ void control_init(void)
   //Linetrace
   //velocity control
   //v_pid.set_parameter (0.001, 100000, 0.0, 0.125, 0.03);
-  v_pid.set_parameter (0.00001, 100000, 0.0, 0.125, 0.03);
+  v_pid.set_parameter (0.005, 100000, 0.0, 0.125, 0.03);
 
   //position control
   //y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
-  y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
+  y_pid.set_parameter (0.015, 1000, 0.000, 0.125, 0.03);
 
 }
 
@@ -970,7 +971,8 @@ void angle_control(void)
         linetrace();
       }
       else{
-        psi_pid.set_parameter  ( 0, 1000, 0.01, 0.125, 0.01);
+        Linetrace_counter = 0;
+        psi_pid.set_parameter  ( 0, 100000, 0.01, 0.125, 0.01);
         auto_mode_count = 1;
       }
     }
@@ -1093,8 +1095,14 @@ void linetrace(void)
     Hovering();
 
 
-    //前進（ピッチ角の制御） 
-    Theta_ref = -0.1*(pi/180);
+    //前進（ピッチ角の制御)
+    if (Linetrace_counter > 300)
+    {
+      Linetrace_counter = 300;
+      Theta_ref = -0.1*(pi/180);
+    }
+    Linetrace_counter++;
+
     
     //目標値との誤差
     float trace_phi_err;
