@@ -71,8 +71,8 @@ float x_alpha = 0;
 //Sensor data
 float Ax,Ay,Az,Wp,Wq,Wr,Mx,My,Mz,Mx0,My0,Mz0,Mx_ave,My_ave,Mz_ave;
 float Acc_norm=0.0;
-float Line_range;
-float Line_velocity;
+float Line_range=0.0;
+float Line_velocity=0.0;
 
 //Initial data
 float rate_limit = 180.0;
@@ -101,7 +101,7 @@ float T_ref;
 float T_stick;
 float Pbias=0.0,Qbias=0.0,Rbias=0.0;
 float Phi_bias=0.0,Theta_bias=0.0,Psi_bias=0.0;  
-float Phi,Theta,Psi;
+float Phi,Theta,Psi=0.0;
 float Phi_ref=0.0,Theta_ref=0.0,Psi_ref=0.0;
 float Elevator_center=0.0, Aileron_center=0.0, Rudder_center=0.0;
 float Pref=0.0,Qref=0.0,Rref=0.0;
@@ -444,16 +444,15 @@ void send_data_via_uart(const char* data) {
 void control_init(void)
 {
   acc_filter.set_parameter(0.005, 0.0025);
-  Range_filter.set_parameter(0.1, 0.025);
-  Angle_filter.set_parameter(0.1, 0.025);
-  Velocity_filter.set_parameter(0.1, 0.025);
+  Range_filter.set_parameter(0.05, 0.025);
+  Angle_filter.set_parameter(0.05, 0.025);
+  Velocity_filter.set_parameter(0.05, 0.025);
 
   //Rate control
   p_pid.set_parameter( 2.5, 100.0, 0.009, 0.125, 0.0025);//(2.2, 5, 0.01)
   q_pid.set_parameter( 2.5, 100.0, 0.009, 0.125, 0.0025);//(1.5, 1, 0.01)
-  r_pid.set_parameter( 3.1, 1, 0.01, 0.125, 0.0025);//(3.1, 1, 0.01)
+  r_pid.set_parameter( 3.5, 10.0, 0.009, 0.125, 0.0025);//(3.1, 1, 0.01)
   //Angle control
-
   phi_pid.set_parameter  ( 8.0, 20.0, 0.007, 0.125, 0.01);//6.0
   theta_pid.set_parameter( 8.0, 20.0, 0.007, 0.125, 0.01);//6.0
   psi_pid.set_parameter  ( 0, 1000, 0.01, 0.125, 0.01);
@@ -467,11 +466,11 @@ void control_init(void)
   //Linetrace
   //velocity control
   //v_pid.set_parameter (0.001, 100000, 0.0, 0.125, 0.03);
-  v_pid.set_parameter (0.0005, 100000, 0.0, 0.125, 0.03);
+  v_pid.set_parameter (0.0002, 100000, 0.0, 0.125, 0.03);
 
   //position control
   //y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
-  y_pid.set_parameter (0.02, 1000, 0.000, 0.125, 0.03);
+  //y_pid.set_parameter (0.0001, 1000, 0.002, 0.125, 0.03);
 
 }
 
@@ -978,6 +977,7 @@ void angle_control(void)
         linetrace();
       }
       else{
+        Psi = 0;
         Linetrace_counter = 0;
         psi_pid.set_parameter( 0, 100000, 0.01, 0.125, 0.01);
         auto_mode_count = 1;
@@ -1107,16 +1107,20 @@ void linetrace(void)
 
 
     //前進（ピッチ角の制御)
-    Theta_ref = -0.1*(pi/180);
-#if 0
+    Theta_ref = -0.05*(pi/180);
+
 
     if (Linetrace_counter > 300)
     {
-      Linetrace_counter = 300;
-      Theta_ref = -0.1*(pi/180);
+      y_pid.set_parameter (0.0001, 1000, 0.002, 0.125, 0.03);
+      Linetrace_counter = 0;
+    }
+    else
+    {
+      y_pid.set_parameter (0.00001, 1000, 0.002, 0.125, 0.03);
     }
     Linetrace_counter++;
-#endif
+
     
     //目標値との誤差
     float trace_phi_err;
