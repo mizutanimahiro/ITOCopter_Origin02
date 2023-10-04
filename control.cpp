@@ -467,7 +467,7 @@ void control_init(void)
   //Linetrace
   //velocity control
   //v_pid.set_parameter (0.001, 100000, 0.0, 0.125, 0.03);
-  v_pid.set_parameter (0.0002, 100000, 0.01, 0.125, 0.03);
+  v_pid.set_parameter (0.00025, 100000, 0.01, 0.125, 0.03);//0.0002,100000,0.01
 
   //position control
   //y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
@@ -1112,7 +1112,6 @@ void linetrace(void)
       T_stick = 0.6 * BATTERY_VOLTAGE*(float)(Chdata[2]-CH3MIN)/(CH3MAX-CH3MIN);
     }
     Hovering();
-
 
     //前進（ピッチ角の制御)
     Theta_ref = -0.05*(pi/180);
