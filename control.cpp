@@ -950,8 +950,8 @@ void angle_control(void)
     e33 = q0*q0 - q1*q1 - q2*q2 + q3*q3;
     Phi = atan2(e23, e33);
     Theta = atan2(-e13, sqrt(e23*e23+e33*e33));
-    //Psi = atan2(e12,e11);
-    //Psi = Xn_est_3;
+    Psi = atan2(e12,e11);
+    Psi = Xn_est_3;
 
     //Get angle ref (manual flight) 
     if (1)
