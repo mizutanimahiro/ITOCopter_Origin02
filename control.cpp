@@ -148,6 +148,7 @@ PID r_pid;
 PID phi_pid;
 PID theta_pid;
 PID psi_pid;
+PID u_pid;
 PID v_pid;
 PID y_pid;
 
@@ -466,7 +467,7 @@ void control_init(void)
 
   //Linetrace
   //velocity control
-  //v_pid.set_parameter (0.001, 100000, 0.0, 0.125, 0.03);
+  u_pid.set_parameter (0.01, 10000, 0.01, 0.125, 0.03);
   v_pid.set_parameter (0.00025, 100000, 0.01, 0.125, 0.03);//0.0002,100000,0.01
 
   //position control
@@ -1112,26 +1113,39 @@ void linetrace(void)
       T_stick = 0.6 * BATTERY_VOLTAGE*(float)(Chdata[2]-CH3MIN)/(CH3MAX-CH3MIN);
     }
     Hovering();
-
-    //前進（ピッチ角の制御)
-    Theta_ref = -0.05*(pi/180);
-  
+    
     //目標値との誤差
     float trace_phi_err;
     float trace_psi_err;
     float trace_v_err;
     float trace_y_err;
+    float trace_u_err;
 
     //目標値
     float phi_ref;
     float psi_ref;
     float v_ref = 0;
     float y_ref = 0;
+    float u_ref = 0.5;
+
+    //pitch loop
+    //U_con
+    trace_u_err = (u_ref - AX);
+    Theta_ref = u_pid.update(trace_u_err);
+
+    //saturation Theta_ref
+    if(Theta_ref >= 0.5*pi/180)
+    {
+      Theta_ref = 0.5*pi/180;
+    }
+    else if(Theta_ref <= -0.5*pi/180)
+    {
+      Theta_ref = -0.5*pi/180;
+    }
 
     //Yaw loop
     //Y_con
     trace_y_err = ( y_ref - Line_range);
-    //Psi_ref   =  0.3 *M_PI*(float)(Chdata[0] - (CH1MAX+CH1MIN)*0.5)*2/(CH1MAX-CH1MIN);
     y_pid.set_parameter (0.0002, 1000, 0.002, 0.125, 0.03);
     Psi_ref = y_pid.update(trace_y_err);
     
@@ -1146,10 +1160,9 @@ void linetrace(void)
     }
 
 
-    // printf("phi_ref:%f", Phi_ref);
     //Roll loop
     //V_con
-    trace_v_err = ( v_ref - Line_velocity);
+    trace_v_err = (v_ref - Line_velocity);
     Phi_ref = v_pid.update(trace_v_err);
 
     //saturation Phi_ref
@@ -1324,8 +1337,8 @@ void gyroCalibration(void)
 void processReceiveData(){
 
   char* clear_data = buffer;
-  clear_data++;//(をスキップ
-  clear_data[strlen(clear_data) -1 ] = '\0';//)をヌル文字に置き換え
+  clear_data++;
+  clear_data[strlen(clear_data) -1 ] = '\0';
   char* token;
 
 
@@ -1349,13 +1362,13 @@ void processReceiveData(){
     }
     x_diff = -x_diff;
     angle_diff = -angle_diff*M_PI/180.0;
-    x_alpha = atan2(x_diff,118);
-    x_diff_dash = 700 * tan(Phi + x_alpha);
+    x_alpha = atan2(x_diff,118); //
+    x_diff_dash = 700 * tan(Phi + x_alpha); //角度補正
     
     Kalman_holizontal(x_diff_dash,angle_diff,(Wp - Pbias),(Wr - Rbias),(Phi - Phi_bias));
     Line_velocity = Velocity_filter.update(Xn_est_1); //速度
     Line_range = Range_filter.update(Xn_est_2); //横ずれ
-    Psi = Angle_filter.update(Xn_est_3);//ラインとの角度
+    Psi = Angle_filter.update(Xn_est_3); //ラインとの角度
 
     // current_time = time_us_64();
     //printf("x : %9.6f\n",x_diff);

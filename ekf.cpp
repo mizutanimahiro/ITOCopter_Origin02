@@ -187,9 +187,9 @@ float u1 = ((-u0 * delta_r) + (w0 * delta_p) + (g * cos(theta0) * delta_phi)) * 
 float u2 = -w0 * delta_phi * h_horizontal;
 float u3 = (delta_r * h_horizontal)/cos(theta0);
 //システムノイズ
-float q1 = 0.01;
-float q2 = 0.0015;
-float q3 = 0.01;
+float q1 = 0.01; //速度v
+float q2 = 0.0015; //位置Y
+float q3 = 0.01; //角度Ψ
 //観測の共分散
 float r1 = 0.000001;
 float r2 = 0.001;
