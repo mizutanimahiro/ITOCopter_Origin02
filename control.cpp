@@ -1360,10 +1360,15 @@ void processReceiveData(){
     if (token != NULL){
       line_number = atof(token);
     }
+    //姿勢によるライン検知の誤差補正
     x_diff = -x_diff;
     angle_diff = -angle_diff*M_PI/180.0;
-    x_alpha = atan2(x_diff,118); //
-    x_diff_dash = 700 * tan(Phi + x_alpha); //角度補正
+    x_alpha = atan2(x_diff,118);
+    //x_diff_dash = 700*tan(Phi + x_alpha); //角度補正
+    x_diff_dash = x_diff - (700*tan(Phi - Phi_bias));
+    
+
+
     
     Kalman_holizontal(x_diff_dash,angle_diff,(Wp - Pbias),(Wr - Rbias),(Phi - Phi_bias));
     Line_velocity = Velocity_filter.update(Xn_est_1); //速度
