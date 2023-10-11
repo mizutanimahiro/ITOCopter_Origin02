@@ -196,15 +196,13 @@ void led_control(void)
   if (Arm_flag == 0 || Arm_flag == 1) rgbled_wait();
 
   else if (Arm_flag == 2 && Flight_mode == NORMAL) rgbled_normal();
-  else if (Arm_flag ==2 && Flight_mode == ROCKING) rgbled_rocking();
+  //else if (Arm_flag ==2 && Flight_mode == ROCKING) rgbled_rocking();
   else if (Arm_flag ==2 && Flight_mode == LINETRACE && line_number == 0) rgbled_lightblue();
   else if (Arm_flag ==2 && Flight_mode == LINETRACE && line_number == 1) rgbled_pink();
   else if (Arm_flag ==2 && Flight_mode == LINETRACE && line_number == 1 && Phi_ref < 0 ) rgbled_pink_rightOrange();
-  // else if (Arm_flag ==2 && Flight_mode == LINETRACE && line_number == 1 && Psi < 0) rgbled_blue_leftOrange();
-  // else if (Arm_flag ==2 && Flight_mode == LINETRACE && line_number == 1 && Psi > 0) rgbled_blue_rightOrange();
   else if (Arm_flag ==2 && Flight_mode == REDCIRCLE && (int)(red_circle == 0)) rgbled_redcircle();
   else if (Arm_flag ==2 && Flight_mode == REDCIRCLE && (int)(red_circle == 1)) rgbled_red();
-  else if (Arm_flag == 2 && Red_flag == 0 && Logflag == 1) rgbled_orange();
+  //else if (Arm_flag == 2 && Red_flag == 0 && Logflag == 1) rgbled_orange();
 
   else if (Arm_flag == 3)
   {
@@ -722,7 +720,7 @@ void rate_control(void)
   sensor_read();
 
   // Mode SW
-  //Chdata[MODE_SW]=1000;//本番はコメントにする/////////////////////////////////////////////////////////////////////////
+  //Chdata[MODE_SW]=1000;//本番はコメントにする
   // if (Chdata[MODE_SW]>1241)
   
   if((Chdata[SERVO] < 200) && (Chdata[REDCIRCLE] < 200) &&  (Chdata[LOG] < 200) && (Chdata[LINETRACE] < 200) && (Chdata[ROCKING] < 200))
@@ -964,11 +962,6 @@ void angle_control(void)
       else if(Flight_mode == ROCKING){
         Phi_ref = rocking_wings(Phi_ref);
       }
-
-
-      //phi_err   = Phi_ref   - (Phi   - Phi_bias);
-      //theta_err = Theta_ref - (Theta - Theta_bias);
-      //psi_err   = Psi_ref   - (Psi   - Psi_bias);
     
       if(Flight_mode == LINETRACE && i2c_connect == 1) {
         // auto_mode_count = 1;
@@ -1130,7 +1123,7 @@ void linetrace(void)
 
     //pitch loop
     //U_con
-    trace_u_err = (u_ref - AX);
+    trace_u_err = (u_ref - Ax);
     Theta_ref = u_pid.update(trace_u_err);
 
     //saturation Theta_ref
@@ -1365,11 +1358,9 @@ void processReceiveData(){
     angle_diff = -angle_diff*M_PI/180.0;
     x_alpha = atan2(x_diff,118);
     //x_diff_dash = 700*tan(Phi + x_alpha); //角度補正
-    x_diff_dash = x_diff - (700*tan(Phi - Phi_bias));
+    x_diff_dash = x_diff - (700*tan(Phi - Phi_bias)); //角度補正
     
 
-
-    
     Kalman_holizontal(x_diff_dash,angle_diff,(Wp - Pbias),(Wr - Rbias),(Phi - Phi_bias));
     Line_velocity = Velocity_filter.update(Xn_est_1); //速度
     Line_range = Range_filter.update(Xn_est_2); //横ずれ
