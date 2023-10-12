@@ -1121,20 +1121,8 @@ void linetrace(void)
     float y_ref = 0;
     float u_ref = 0.5;
 
-    //pitch loop
-    //U_con
-    trace_u_err = (u_ref - Ax);
-    Theta_ref = u_pid.update(trace_u_err);
-
-    //saturation Theta_ref
-    if(Theta_ref >= 0.5*pi/180)
-    {
-      Theta_ref = 0.5*pi/180;
-    }
-    else if(Theta_ref <= -0.5*pi/180)
-    {
-      Theta_ref = -0.5*pi/180;
-    }
+    //picth control
+    Theta_ref = -0.5*pi/180;
 
     //Yaw loop
     //Y_con
@@ -1357,10 +1345,8 @@ void processReceiveData(){
     x_diff = -x_diff;
     angle_diff = -angle_diff*M_PI/180.0;
     x_alpha = atan2(x_diff,118);
-    //x_diff_dash = 700*tan(Phi + x_alpha); //角度補正
-    x_diff_dash = x_diff - (700*tan(Phi - Phi_bias)); //角度補正
+    x_diff_dash = 700*tan(Phi + x_alpha); //角度補正
     
-
     Kalman_holizontal(x_diff_dash,angle_diff,(Wp - Pbias),(Wr - Rbias),(Phi - Phi_bias));
     Line_velocity = Velocity_filter.update(Xn_est_1); //速度
     Line_range = Range_filter.update(Xn_est_2); //横ずれ
