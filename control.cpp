@@ -1106,7 +1106,10 @@ void linetrace(void)
       T_stick = 0.6 * BATTERY_VOLTAGE*(float)(Chdata[2]-CH3MIN)/(CH3MAX-CH3MIN);
     }
     Hovering();
-    
+ 
+    //picth control
+    Theta_ref = -0.5*pi/180;
+
     //目標値との誤差
     float trace_phi_err;
     float trace_psi_err;
@@ -1120,9 +1123,6 @@ void linetrace(void)
     float v_ref = 0;
     float y_ref = 0;
     float u_ref = 0.5;
-
-    //picth control
-    Theta_ref = -0.5*pi/180;
 
     //Yaw loop
     //Y_con
@@ -1221,7 +1221,6 @@ void logging(void)
       Logdata[LogdataCounter++]=Qref;                     //18
       Logdata[LogdataCounter++]=Rref;                     //19
       Logdata[LogdataCounter++]=Phi-Phi_bias;             //20
-
       Logdata[LogdataCounter++]=Theta-Theta_bias;         //21
       Logdata[LogdataCounter++]=Psi-Psi_bias;             //22
       Logdata[LogdataCounter++]=Phi_ref;                  //23
@@ -1230,18 +1229,21 @@ void logging(void)
       Logdata[LogdataCounter++]=P_com;                    //26
       Logdata[LogdataCounter++]=Q_com;                    //27
       Logdata[LogdataCounter++]=R_com;                    //28
+
       Logdata[LogdataCounter++]=p_pid.m_integral;//m_filter_output;    //29
       Logdata[LogdataCounter++]=q_pid.m_integral;//m_filter_output;    //30
-
       Logdata[LogdataCounter++]=r_pid.m_integral;//m_filter_output;    //31
-      Logdata[LogdataCounter++]=phi_pid.m_integral;//m_filter_output;  //32
-      Logdata[LogdataCounter++]=angle_diff;//theta_pid.m_integral;//m_filter_output;//33
-      Logdata[LogdataCounter++]=x_alpha;//Pbias;                    //34
-      Logdata[LogdataCounter++]=x_diff;//Qbias;                    //35
 
-      Logdata[LogdataCounter++]=x_diff_dash;//Rbias;                    //36
-      Logdata[LogdataCounter++]=Line_velocity;                    //37
-      Logdata[LogdataCounter++]=Line_range;                 //38
+      Logdata[LogdataCounter++]=phi_pid.m_integral;//m_filter_output;  //32
+      Logdata[LogdataCounter++]=theta_pid.m_integral;//m_filter_output;//33
+
+      Logdata[LogdataCounter++]=angle_diff;                         //34
+      Logdata[LogdataCounter++]=x_alpha;                            //35
+      Logdata[LogdataCounter++]=x_diff;                             //36
+
+      Logdata[LogdataCounter++]=x_diff_dash;                        //37
+      Logdata[LogdataCounter++]=Line_velocity;                      //38
+      Logdata[LogdataCounter++]=Line_range;                         //39
 
    
     }
