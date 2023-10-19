@@ -456,21 +456,10 @@ void control_init(void)
   phi_pid.set_parameter  ( 8.0, 20.0, 0.007, 0.125, 0.01);//6.0
   theta_pid.set_parameter( 8.0, 20.0, 0.007, 0.125, 0.01);//6.0
   psi_pid.set_parameter  ( 0, 1000, 0.01, 0.125, 0.01);
-  
-  // else if(Flight_mode == SERVO){
-  //   phi_pid.set_parameter  ( 8.0, 1.0, 0.02, 0.125, 0.01);//8.0
-  //   theta_pid.set_parameter( 8.0, 1.0, 0.02, 0.125, 0.01);//8.0
-  //   psi_pid.set_parameter  ( 0, 1000, 0.01, 0.125, 0.01);
-  // }
 
   //Linetrace
   //velocity control
-  u_pid.set_parameter (0.01, 10000, 0.01, 0.125, 0.03);
   v_pid.set_parameter (0.00025, 100000, 0.01, 0.125, 0.03);//0.0002,100000,0.01
-
-  //position control
-  //y_pid.set_parameter (0.01, 100000, 0.0, 0.125, 0.03);
-  //y_pid.set_parameter (0.0001, 1000, 0.002, 0.125, 0.03);
 
 }
 
@@ -851,17 +840,16 @@ void rate_control(void)
       Q_com = -3.7;
     }
 
-  //Motor Control
+  //Motor Control(mixing)
   // 1250/7.4=112.6
   // 1/7.4=0.1351(2セル時)
   //1/11.1 = 0.0901（3セル時）
-  
-  //ミキシング
   FR_duty = (T_ref +(-P_com +Q_com -R_com)*0.25)*0.1351;
   FL_duty = (T_ref +( P_com +Q_com +R_com)*0.25)*0.1351;
   RR_duty = (T_ref +(-P_com -Q_com +R_com)*0.25)*0.1351;
   RL_duty = (T_ref +( P_com -Q_com -R_com)*0.25)*0.1351;
 
+  //スロットルの値が直接反映される（ロールピッチヨー制御なし）
   // FR_duty = (T_ref)*0.0901;
   // FL_duty = (T_ref)*0.0901;
   // RR_duty = (T_ref)*0.0901;
@@ -1329,7 +1317,19 @@ void processReceiveData(){
   if (Flight_mode == LINETRACE){
     token = strtok(clear_data,",");
     if (token != NULL){
-      x_diff = atof(token);
+      x_1 = atof(token);
+    }
+    token = strtok(NULL,",");
+    if (token != NULL){
+      x_2 = atof(token);
+    }
+    token = strtok(NULL,",");
+    if (token != NULL){
+      y_1 = atof(token);
+    }
+    token = strtok(NULL,",");
+    if (token != NULL){
+      y_2 = atof(token);
     }
     token = strtok(NULL,",");
     if (token != NULL){
@@ -1337,17 +1337,20 @@ void processReceiveData(){
     }
     token = strtok(NULL,",");
     if (token != NULL){
-      gap_number = atof(token);
+      line_number = atof(token);
     }
     token = strtok(NULL,",");
     if (token != NULL){
-      line_number = atof(token);
+      x_diff = atof(token);
     }
     //姿勢によるライン検知の誤差補正
     x_diff = -x_diff;
     angle_diff = -angle_diff*M_PI/180.0;
     x_alpha = atan2(x_diff,118);
     x_diff_dash = 700*tan(Phi + x_alpha); //角度補正
+
+    //xy座標変換
+
     
     Kalman_holizontal(x_diff_dash,angle_diff,(Wp - Pbias),(Wr - Rbias),(Phi - Phi_bias));
     Line_velocity = Velocity_filter.update(Xn_est_1); //速度
