@@ -43,6 +43,10 @@ Matrix<float, 1 ,3> f_distance_mat = MatrixXf::Zero(1,3);
 char buffer[BUFFER_SIZE];
 int buffer_index = 0;
 uint8_t print_flag = 0;
+float x_1_dash;
+float x_2_dash;
+float y_1_dash;
+float y_2_dash;
 float x_diff = 0;
 float angle_diff = 0;
 int previous_gap_number = 0;
@@ -1312,24 +1316,22 @@ void processReceiveData(){
   clear_data[strlen(clear_data) -1 ] = '\0';
   char* token;
 
-
-
   if (Flight_mode == LINETRACE){
     token = strtok(clear_data,",");
     if (token != NULL){
-      x_1 = atof(token);
+      x_1_dash = atof(token);
     }
     token = strtok(NULL,",");
     if (token != NULL){
-      x_2 = atof(token);
+      x_2_dash = atof(token);
     }
     token = strtok(NULL,",");
     if (token != NULL){
-      y_1 = atof(token);
+      y_1_dash = atof(token);
     }
     token = strtok(NULL,",");
     if (token != NULL){
-      y_2 = atof(token);
+      y_2_dash = atof(token);
     }
     token = strtok(NULL,",");
     if (token != NULL){
@@ -1349,9 +1351,35 @@ void processReceiveData(){
     x_alpha = atan2(x_diff,118);
     x_diff_dash = 700*tan(Phi + x_alpha); //角度補正
 
-    //xy座標変換
+    //座標変換
+    float q0,q1,q2,q3;
+    float E11,E12,E13,E21,E22,E23,E31,E32,E33;
+    float x_drone,y_drone,X_inertia,Y_inertia,Z_inertia;
 
-    
+    q0 = Xe(0,0);
+    q1 = Xe(1,0);
+    q2 = Xe(2,0);
+    q3 = Xe(3,0);
+
+    //カメラ座標から機体座標への座標変換
+    y_drone = (x_1_dash + x_2_dash)/2;
+    x_drone = -(y_1_dash + y_2_dash)/2;
+
+    //転置後の方向余弦行列（機体座標→慣性座標）
+    E11 = q0^2 + q1^2 + q2^2 + q3^2;
+    E12 = 2*(q1*q2 - q0*q3);
+    E13 = 2*(q1*q3 - q0*q3);
+    E21 = 2*(q1*q2 - q0*q3);
+    E22 = q0^2 - q1^2 + q2^2 - q3^2;
+    E23 = 2*(q1*q3 - q0*q1);
+    E31 = 2*(q1*q3 - q0*q2);
+    E32 = 2*(q2*q3 + q0*q1);
+    E33 = q0^2 - q1^2 - q2^2 + q3^2;
+
+    //機体座標から慣性座標への座標変換
+    X_inertia = E11*x_drone + E12*y_drone + E13*;
+    Y_inertia = E21*x_drone + E22*y_drone + E23*;
+
     Kalman_holizontal(x_diff_dash,angle_diff,(Wp - Pbias),(Wr - Rbias),(Phi - Phi_bias));
     Line_velocity = Velocity_filter.update(Xn_est_1); //速度
     Line_range = Range_filter.update(Xn_est_2); //横ずれ
