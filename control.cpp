@@ -1308,7 +1308,7 @@ void gyroCalibration(void)
   Rbias=sumr/N;
 }
 
-//OpenMV通信用
+//OpenMV通信用----------------------------------------------------------------------------------------------------------------------------
 void processReceiveData(){
 
   char* clear_data = buffer;
@@ -1351,19 +1351,21 @@ void processReceiveData(){
     x_alpha = atan2(x_diff,118);
     x_diff_dash = 700*tan(Phi + x_alpha); //角度補正
 
-    //座標変換
+    //座標変換----------------------------------------------------------------------------------------------
     float q0,q1,q2,q3;
     float E11,E12,E13,E21,E22,E23,E31,E32,E33;
-    float x_drone,y_drone,X_inertia,Y_inertia,Z_inertia;
-
-    q0 = Xe(0,0);
-    q1 = Xe(1,0);
-    q2 = Xe(2,0);
-    q3 = Xe(3,0);
+    float x_drone,y_drone,z_drone,drone_angle,X_inertia,Y_inertia,Z_inertia,X0_inertia,Y0_inertia,Z0_inertia;
 
     //カメラ座標から機体座標への座標変換
     y_drone = (x_1_dash + x_2_dash)/2;
     x_drone = -(y_1_dash + y_2_dash)/2;
+    z_drone = Kalman_alt*10;
+
+    //クォータニオンの計算
+    q0 = Xe(0,0);
+    q1 = Xe(1,0);
+    q2 = Xe(2,0);
+    q3 = Xe(3,0);
 
     //転置後の方向余弦行列（機体座標→慣性座標）
     E11 = q0^2 + q1^2 + q2^2 + q3^2;
@@ -1377,8 +1379,13 @@ void processReceiveData(){
     E33 = q0^2 - q1^2 - q2^2 + q3^2;
 
     //機体座標から慣性座標への座標変換
-    X_inertia = E11*x_drone + E12*y_drone + E13*;
-    Y_inertia = E21*x_drone + E22*y_drone + E23*;
+    X_inertia = E11*x_drone + E12*y_drone + E13*z_drone;
+    Y_inertia = E21*x_drone + E22*y_drone + E23*z_drone;
+    Z_inertia = E31*x_drone + E32*y_drone + E33*z_drone;
+
+    X0_inertia = 0 - X_inertia;
+    Y0_inertia = 0 - Y_inertia;
+    Z0_inertia = 0 - Z_inertia;
 
     Kalman_holizontal(x_diff_dash,angle_diff,(Wp - Pbias),(Wr - Rbias),(Phi - Phi_bias));
     Line_velocity = Velocity_filter.update(Xn_est_1); //速度
@@ -1390,7 +1397,7 @@ void processReceiveData(){
     // printf("angle : %9.6f\n",angle_diff);
     // printf("psi : %9.6f\n",Xn_est_3);
   }
-
+//-----------------------------------------------------------------------------------------------------------------------------------
   else if (Flight_mode == REDCIRCLE){
     // token = strtok(clear_data,",");
     // if (token != NULL){
