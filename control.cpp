@@ -1107,14 +1107,12 @@ void linetrace(void)
     float trace_psi_err;
     float trace_v_err;
     float trace_y_err;
-    float trace_u_err;
 
     //目標値
     float phi_ref;
     float psi_ref;
     float v_ref = 0;
     float y_ref = 0;
-    float u_ref = 0.5;
 
     //Yaw loop
     //Y_con
@@ -1131,7 +1129,6 @@ void linetrace(void)
     {
       Psi_ref = -30*pi/180;
     }
-
 
     //Roll loop
     //V_con
@@ -1353,8 +1350,27 @@ void processReceiveData(){
 
     //座標変換----------------------------------------------------------------------------------------------
     float q0,q1,q2,q3;
-    float E11,E12,E13,E21,E22,E23,E31,E32,E33;
-    float x_drone,y_drone,z_drone,drone_angle,X_inertia,Y_inertia,Z_inertia,X0_inertia,Y0_inertia,Z0_inertia;
+    float e11,e12,e13,e21,e22,e23,e31,e32,e33;//透視変換の内部パラメータ
+    float E11,E12,E13,E21,E22,E23,E31,E32,E33;//方向余弦行列
+    float fx,fy,cx,cy,u_camera,v_camera,x_camera,y_camera;//透視変換
+    float x_drone,y_drone,z_drone;//カメラ座標から機体座標へ座標変換
+    float X_inertia,Y_inertia,Z_inertia,X0_inertia,Y0_inertia,Z0_inertia;//機体座標から慣性座標に座標変換
+
+    //画像カメラからカメラ座標への座標変換
+    u_camera = (x_1_dash + x_2_dash)/2;
+    v_camera =  (y_1_dash + y_2_dash)/2;
+    //焦点距離は2.8mm
+
+    //透視変換の内部パラメータ（画像座標→カメラ座標）
+    e11 = fx;
+    e12 = 0;
+    e13 = 0;
+    e21 = 0;
+    e22 = fy;
+    e23 = 0;
+    e31 = cx;
+    e32 = cy;
+    e33 = 1;
 
     //カメラ座標から機体座標への座標変換
     y_drone = (x_1_dash + x_2_dash)/2;
