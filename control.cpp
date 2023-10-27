@@ -1348,13 +1348,12 @@ void processReceiveData(){
     x_alpha = atan2(x_diff,118);
     x_diff_dash = 700*tan(Phi + x_alpha); //角度補正
 
-    //座標変換----------------------------------------------------------------------------------------------
-    float q0,q1,q2,q3;
+    //座標変換----------------------------------------------------------------------------------------------------------------------------------------------------------------------
     float e11,e12,e13,e21,e22,e23,e31,e32,e33;//透視変換の内部パラメータ
     float E11,E12,E13,E21,E22,E23,E31,E32,E33;//方向余弦行列
-    float fx,fy,cx,cy,u1_camera,v1_camera,u2_camera,v2_camera,u1_camera_dash,u2_camera_dash,v1_camera_dash,v2_camera_dash,x1_camera,x2_camera,y1_camera,y2_camera,z_camera;//透視変換
-    float x1_drone,x2_drone,y1_drone,y2_drone,z_drone;//カメラ座標から機体座標へ座標変換
-    float X_inertia,Y_inertia,Z_inertia,X0_inertia,Y0_inertia,Z0_inertia;//機体座標から慣性座標に座標変換
+    float fx,fy,cx,cy,u1_camera,v1_camera,u2_camera,v2_camera,u1_camera_dash,u2_camera_dash,v1_camera_dash,v2_camera_dash,x1_camera,x2_camera,y1_camera,y2_camera,z1_camera,z2_camera;//透視変換
+    float x1_drone,x2_drone,y1_drone,y2_drone,z1_drone,z2_drone;//カメラ座標から機体座標へ座標変換
+    float X1_inertia,Y1_inertia,Z1_inertia,X2_inertia,Y2_inertia,Z2_inertia,X0_1_inertia,Y0_1_inertia,Z0_1_inertia,X0_2_inertia,Y0_2_inertia,Z0_2_inertia;//機体座標から慣性座標に座標変換
 
     //画像カメラからカメラ座標への座標変換
     u1_camera = x_1_dash;
@@ -1365,7 +1364,8 @@ void processReceiveData(){
     //焦点距離は2.8mm
     //受光素子数が横：120,縦：120
     //ピクセルサイズ：2.8㎛×2.8㎛
-    //原点移動
+
+    //画像座標、カメラ座標の原点を中心に移動
     u1_camera_dash = 0.0028*u1_camera + 0.0014 - (0.0028*160)/2;
     u2_camera_dash = 0.0028*u2_camera + 0.0014 - (0.0028*160)/2;
     v1_camera_dash = 0.0028*v1_camera + 0.0014 - (0.0028*120)/2;
@@ -1394,14 +1394,16 @@ void processReceiveData(){
     y1_camera = Kalman_alt*e22*v1_camera_dash;
     x2_camera = Kalman_alt*e11*u2_camera_dash;
     y2_camera = Kalman_alt*e22*v2_camera_dash;
-    z_camera = Kalman_alt*(e31*u_camera + e32*v_camera + 1);
+    z1_camera = Kalman_alt*(e31*u1_camera + e32*v1_camera + 1);
+    z2_camera = Kalman_alt*(e31*u2_camera + e32*v2_camera + 1);
 
     //カメラ座標から機体座標への座標変換
     y1_drone = x1_camera;
     x1_drone = -y1_camera;
     y2_drone = x2_camera;
     x2_drone = -y2_camera;
-    z_drone = z_camera;
+    z1_drone = z1_camera;
+    z2_drone = z2_camera;
 
     //クォータニオンの計算
     q0 = Xe(0,0);
@@ -1421,13 +1423,22 @@ void processReceiveData(){
     E33 = q0^2 - q1^2 - q2^2 + q3^2;
 
     //機体座標から慣性座標への座標変換
-    X_inertia = E11*x_drone + E12*y_drone + E13*z_drone;
-    Y_inertia = E21*x_drone + E22*y_drone + E23*z_drone;
-    Z_inertia = E31*x_drone + E32*y_drone + E33*z_drone;
+    X1_inertia = E11*x1_drone + E12*y1_drone + E13*z1_drone;
+    Y1_inertia = E21*x1_drone + E22*y1_drone + E23*z1_drone;
+    Z1_inertia = E31*x1_drone + E32*y1_drone + E33*z1_drone;
 
-    X0_inertia = 0 - X_inertia;
-    Y0_inertia = 0 - Y_inertia;
-    Z0_inertia = 0 - Z_inertia;
+    X2_inertia = E11*x2_drone + E12*y2_drone + E13*z2_drone;
+    Y2_inertia = E21*x2_drone + E22*y2_drone + E23*z2_drone;
+    Z2_inertia = E31*x2_drone + E32*y2_drone + E33*z2_drone;
+
+    //ドローン自身の位置
+    X0_1_inertia = 0 - X1_inertia;
+    Y0_1_inertia = 0 - Y1_inertia;
+    Z0_1_inertia = 0 - Z1_inertia;
+
+    X0_2_inertia = 0 - X2_inertia;
+    Y0_2_inertia = 0 - Y2_inertia;
+    Z0_2_inertia = 0 - Z2_inertia;
 
     Kalman_holizontal(x_diff_dash,angle_diff,(Wp - Pbias),(Wr - Rbias),(Phi - Phi_bias));
     Line_velocity = Velocity_filter.update(Xn_est_1); //速度
@@ -1439,7 +1450,7 @@ void processReceiveData(){
     // printf("angle : %9.6f\n",angle_diff);
     // printf("psi : %9.6f\n",Xn_est_3);
   }
-//-----------------------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   else if (Flight_mode == REDCIRCLE){
     // token = strtok(clear_data,",");
     // if (token != NULL){
