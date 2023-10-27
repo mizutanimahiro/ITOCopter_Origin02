@@ -1352,30 +1352,56 @@ void processReceiveData(){
     float q0,q1,q2,q3;
     float e11,e12,e13,e21,e22,e23,e31,e32,e33;//透視変換の内部パラメータ
     float E11,E12,E13,E21,E22,E23,E31,E32,E33;//方向余弦行列
-    float fx,fy,cx,cy,u_camera,v_camera,x_camera,y_camera;//透視変換
-    float x_drone,y_drone,z_drone;//カメラ座標から機体座標へ座標変換
+    float fx,fy,cx,cy,u1_camera,v1_camera,u2_camera,v2_camera,u1_camera_dash,u2_camera_dash,v1_camera_dash,v2_camera_dash,x1_camera,x2_camera,y1_camera,y2_camera,z_camera;//透視変換
+    float x1_drone,x2_drone,y1_drone,y2_drone,z_drone;//カメラ座標から機体座標へ座標変換
     float X_inertia,Y_inertia,Z_inertia,X0_inertia,Y0_inertia,Z0_inertia;//機体座標から慣性座標に座標変換
 
     //画像カメラからカメラ座標への座標変換
-    u_camera = (x_1_dash + x_2_dash)/2;
-    v_camera =  (y_1_dash + y_2_dash)/2;
+    u1_camera = x_1_dash;
+    v1_camera = y_1_dash;
+    u2_camera = x_2_dash;
+    v2_camera = y_2_dash;
+
     //焦点距離は2.8mm
+    //受光素子数が横：120,縦：120
+    //ピクセルサイズ：2.8㎛×2.8㎛
+    //原点移動
+    u1_camera_dash = 0.0028*u1_camera + 0.0014 - (0.0028*160)/2;
+    u2_camera_dash = 0.0028*u2_camera + 0.0014 - (0.0028*160)/2;
+    v1_camera_dash = 0.0028*v1_camera + 0.0014 - (0.0028*120)/2;
+    v2_camera_dash = 0.0028*v2_camera + 0.0014 - (0.0028*120)/2;
+
+    //イメージセンサの長さ=ピクセルサイズ*受光素子数
+    fx = (160/0.336)*2.8;//(横の受光素子数/イメージセンサの横の長さ)*mm単位の焦点距離
+    fy = (120/0.448)*2.8;//(縦の受光素子数/イメージセンサの縦の長さ)*mm単位の焦点距離
+
+    cx = 80.5*0.0028;//x軸方向の光学中心、（横のピクセル数*ピクセルサイズ）/2
+    cy = 60.5*0.0028;//y軸方向の光学中心、（縦のピクセル数*ピクセルサイズ）/2
 
     //透視変換の内部パラメータ（画像座標→カメラ座標）
-    e11 = fx;
+    e11 = 1/fx;
     e12 = 0;
-    e13 = 0;
+    e13 = -cx/fy;
     e21 = 0;
-    e22 = fy;
-    e23 = 0;
-    e31 = cx;
-    e32 = cy;
+    e22 = 1/fy;
+    e23 = -cy/fy;
+    e31 = 0;
+    e32 = 0;
     e33 = 1;
 
+    //透視変換(画像座標→カメラ座標)
+    x1_camera = Kalman_alt*e11*u1_camera_dash;
+    y1_camera = Kalman_alt*e22*v1_camera_dash;
+    x2_camera = Kalman_alt*e11*u2_camera_dash;
+    y2_camera = Kalman_alt*e22*v2_camera_dash;
+    z_camera = Kalman_alt*(e31*u_camera + e32*v_camera + 1);
+
     //カメラ座標から機体座標への座標変換
-    y_drone = (x_1_dash + x_2_dash)/2;
-    x_drone = -(y_1_dash + y_2_dash)/2;
-    z_drone = Kalman_alt*10;
+    y1_drone = x1_camera;
+    x1_drone = -y1_camera;
+    y2_drone = x2_camera;
+    x2_drone = -y2_camera;
+    z_drone = z_camera;
 
     //クォータニオンの計算
     q0 = Xe(0,0);
