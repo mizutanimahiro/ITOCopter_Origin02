@@ -72,6 +72,10 @@ float TOL_x_alpha = 0;
 float TOL_y_alpha = 0;
 float x_alpha = 0;
 
+//Convert Coordinate（座標変換）
+float Y0_1,Y0_2,X0_1,X0_2;
+float Inclining_angle,Intercepts;
+
 //Sensor data
 float Ax,Ay,Az,Wp,Wq,Wr,Mx,My,Mz,Mx0,My0,Mz0,Mx_ave,My_ave,Mz_ave;
 float Acc_norm=0.0;
@@ -1348,7 +1352,8 @@ void processReceiveData(){
     x_alpha = atan2(x_diff,118);
     x_diff_dash = 700*tan(Phi + x_alpha); //角度補正
 
-    //座標変換----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    //座標変換-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    float q0,q1,q2,q3;
     float e11,e12,e13,e21,e22,e23,e31,e32,e33;//透視変換の内部パラメータ
     float E11,E12,E13,E21,E22,E23,E31,E32,E33;//方向余弦行列
     float fx,fy,cx,cy,u1_camera,v1_camera,u2_camera,v2_camera,u1_camera_dash,u2_camera_dash,v1_camera_dash,v2_camera_dash,x1_camera,x2_camera,y1_camera,y2_camera,z1_camera,z2_camera;//透視変換
@@ -1412,15 +1417,15 @@ void processReceiveData(){
     q3 = Xe(3,0);
 
     //転置後の方向余弦行列（機体座標→慣性座標）
-    E11 = q0^2 + q1^2 + q2^2 + q3^2;
+    E11 = q0*q0 + q1*q1 + q2*q2 + q3*q3;
     E12 = 2*(q1*q2 - q0*q3);
     E13 = 2*(q1*q3 - q0*q3);
     E21 = 2*(q1*q2 - q0*q3);
-    E22 = q0^2 - q1^2 + q2^2 - q3^2;
+    E22 = q0*q0 - q1*q1 + q2*q2 - q3*q2;
     E23 = 2*(q1*q3 - q0*q1);
     E31 = 2*(q1*q3 - q0*q2);
     E32 = 2*(q2*q3 + q0*q1);
-    E33 = q0^2 - q1^2 - q2^2 + q3^2;
+    E33 = q0*q0 - q1*q1 - q2*q2 + q3*q3;
 
     //機体座標から慣性座標への座標変換
     X1_inertia = E11*x1_drone + E12*y1_drone + E13*z1_drone;
@@ -1431,7 +1436,7 @@ void processReceiveData(){
     Y2_inertia = E21*x2_drone + E22*y2_drone + E23*z2_drone;
     Z2_inertia = E31*x2_drone + E32*y2_drone + E33*z2_drone;
 
-    //ドローン自身の位置
+    //カメラから得られた2点の画像座標を慣性座標上のドローンの位置の座標
     X0_1_inertia = 0 - X1_inertia;
     Y0_1_inertia = 0 - Y1_inertia;
     Z0_1_inertia = 0 - Z1_inertia;
@@ -1440,10 +1445,28 @@ void processReceiveData(){
     Y0_2_inertia = 0 - Y2_inertia;
     Z0_2_inertia = 0 - Z2_inertia;
 
+    X0_1 = X0_1_inertia;
+    X0_2 = X0_2_inertia;
+    Y0_1 = Y0_1_inertia;
+    Y0_2 = Y0_2_inertia;
+
+    //慣性空間に変換したドローン自身の2点の座標から直線の方程式を出す
+    float Inclination,b;
+
+    Inclination = (Y0_2_inertia - Y0_1_inertia)/(X0_2_inertia - X0_1_inertia);//直線の方程式の傾き
+    b = ((X0_2_inertia*Y0_1_inertia)/X0_1_inertia - Y0_2_inertia)/(X0_2_inertia/X0_1_inertia - 1);//直線の方程式の切片
+
+    Inclining_angle = Inclination;
+    Intercepts = b;
+
+    Line_range = abs(b)/sqrt(Inclination*Inclination);//ラインとの距離
+    Psi = -Inclination;//ラインとの角度のずれ
+
+
     Kalman_holizontal(x_diff_dash,angle_diff,(Wp - Pbias),(Wr - Rbias),(Phi - Phi_bias));
     Line_velocity = Velocity_filter.update(Xn_est_1); //速度
-    Line_range = Range_filter.update(Xn_est_2); //横ずれ
-    Psi = Angle_filter.update(Xn_est_3); //ラインとの角度
+    //Line_range = Range_filter.update(Xn_est_2); //横ずれ
+    //Psi = Angle_filter.update(Xn_est_3); //ラインとの角度
 
     // current_time = time_us_64();
     //printf("x : %9.6f\n",x_diff);
