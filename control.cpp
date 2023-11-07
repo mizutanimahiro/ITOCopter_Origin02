@@ -207,7 +207,7 @@ void led_control(void)
   //else if (Arm_flag ==2 && Flight_mode == ROCKING) rgbled_rocking();
   else if (Arm_flag ==2 && Flight_mode == LINETRACE && line_number == 0) rgbled_lightblue();
   else if (Arm_flag ==2 && Flight_mode == LINETRACE && line_number == 1) rgbled_pink();
-  else if (Arm_flag ==2 && Flight_mode == LINETRACE && line_number == 1 && Phi_ref < 0 ) rgbled_pink_rightOrange();
+  //else if (Arm_flag ==2 && Flight_mode == LINETRACE && line_number == 1 && Phi_ref < 0 ) rgbled_pink_rightOrange();
   else if (Arm_flag ==2 && Flight_mode == REDCIRCLE && (int)(red_circle == 0)) rgbled_redcircle();
   else if (Arm_flag ==2 && Flight_mode == REDCIRCLE && (int)(red_circle == 1)) rgbled_red();
   //else if (Arm_flag == 2 && Red_flag == 0 && Logflag == 1) rgbled_orange();
@@ -1230,15 +1230,15 @@ void logging(void)
       Logdata[LogdataCounter++]=phi_pid.m_integral;//m_filter_output;  //32
       Logdata[LogdataCounter++]=theta_pid.m_integral;//m_filter_output;//33
 
-      Logdata[LogdataCounter++]=angle_diff;                         //34
-      Logdata[LogdataCounter++]=x_alpha;                            //35
-      Logdata[LogdataCounter++]=x_diff;                             //36
+      // Logdata[LogdataCounter++]=angle_diff;                         //34
+      // Logdata[LogdataCounter++]=x_alpha;                            //35
+      // Logdata[LogdataCounter++]=x_diff;                             //36
 
-      Logdata[LogdataCounter++]=x_diff_dash;                        //37
-      Logdata[LogdataCounter++]=Line_velocity;                      //38
-      Logdata[LogdataCounter++]=Line_range;                         //39
-      Logdata[LogdataCounter++]=Inclining_angle;                    //40
-      Logdata[LogdataCounter++]=Intercepts;                         //41
+      // Logdata[LogdataCounter++]=x_diff_dash;                        //37
+      // Logdata[LogdataCounter++]=Line_velocity;                      //38
+      // Logdata[LogdataCounter++]=Line_range;                         //39
+      // Logdata[LogdataCounter++]=Inclining_angle;                    //40
+      // Logdata[LogdataCounter++]=Intercepts;                         //41
 
    
     }
@@ -1322,6 +1322,10 @@ void processReceiveData(){
   if (Flight_mode == LINETRACE){
     token = strtok(clear_data,",");
     if (token != NULL){
+      line_number = atof(token);
+    }
+    token = strtok(NULL,",");
+    if (token != NULL){
       x_1_dash = atof(token);
     }
     token = strtok(NULL,",");
@@ -1336,23 +1340,11 @@ void processReceiveData(){
     if (token != NULL){
       y_2_dash = atof(token);
     }
-    token = strtok(NULL,",");
-    if (token != NULL){
-      angle_diff = atof(token);
-    }
-    token = strtok(NULL,",");
-    if (token != NULL){
-      line_number = atof(token);
-    }
-    token = strtok(NULL,",");
-    if (token != NULL){
-      x_diff = atof(token);
-    }
     //姿勢によるライン検知の誤差補正
-    x_diff = -x_diff;
-    angle_diff = -angle_diff*M_PI/180.0;
-    x_alpha = atan2(x_diff,118);
-    x_diff_dash = 700*tan(Phi + x_alpha); //角度補正
+    // x_diff = -x_diff;
+    // angle_diff = -angle_diff*M_PI/180.0;
+    // x_alpha = atan2(x_diff,118);
+    // x_diff_dash = 700*tan(Phi + x_alpha); //角度補正
 
     //座標変換-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     float q0,q1,q2,q3;
@@ -1474,6 +1466,21 @@ void processReceiveData(){
     //printf("x : %9.6f\n",x_diff);
     // printf("angle : %9.6f\n",angle_diff);
     // printf("psi : %9.6f\n",Xn_est_3);
+    // printf("x1 : %5f\t,x2 : %5f\n",x_1_dash,x_2_dash);
+    // printf("y1 : %5f\t,y2 : %5f\n",y_1_dash,y_2_dash);
+    // printf("u1 : %5f\t,u2 : %5f\n",u1_camera_dash,u2_camera_dash);
+    // printf("v1 : %5f\t,v2 : %5f\n",v1_camera_dash,v2_camera_dash);
+    // printf("camera_x_1 : %5f\t,camera_x_2 : %5f\n",x1_camera,x2_camera);
+    // printf("camera_y_1 : %5f\t,camera_y_2 : %5f\n",y1_camera,y2_camera);
+    // printf("q0:%5f\t,q1:%5f\t,q2:%5f\t,q3:%5f\n",q0,q1,q2,q3);
+    // printf("X1_inertia:%5f\t,X2_inertia:%5f\n",X1_inertia,X2_inertia);
+    // printf("Y1_inertia:%5f\t,Y2_inertia:%5f\n",Y1_inertia,Y2_inertia);
+    printf("X1 : %5f\t,X2 : %5f\n",X0_1,X0_2);
+    printf("Y1 : %5f\t,Y2 : %5f\n",Y0_1,Y0_2);
+    printf("L : %8f\n",Line_range);
+    printf("Angle : %8f\n",Inclining_angle);
+    printf("b : %8f\n",Intercepts);
+    printf("\n");
   }
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   else if (Flight_mode == REDCIRCLE){
@@ -1614,9 +1621,10 @@ const float zoom[3]={0.003077277151877191, 0.0031893151610213463, 0.003383279497
       lotate_altitude_init(Theta,Psi,Phi);
       lotated_distance = lotate_altitude(distance);
       Kalman_alt = Kalman_PID(lotated_distance,z_acc);
-      if((Kalman_alt - last_Kalman_alt) > 500 || (Kalman_alt - last_Kalman_alt) < 500){
-        Kalman_alt = last_Kalman_alt;
-      }
+      // if((Kalman_alt - last_Kalman_alt) > 500 || (Kalman_alt - last_Kalman_alt) < 500){
+      //   Kalman_alt = last_Kalman_alt;
+      // }
+      //printf("H : %4f\t,dis : %d\n",Kalman_alt,distance);
       //printf("%9.6f \n",mu_Yn_est(1,0));
       // z_acc  = Az-9.80665;
       //input = Kalman_PID(lotated_distance,z_acc);
