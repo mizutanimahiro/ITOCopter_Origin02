@@ -1237,6 +1237,8 @@ void logging(void)
       Logdata[LogdataCounter++]=x_diff_dash;                        //37
       Logdata[LogdataCounter++]=Line_velocity;                      //38
       Logdata[LogdataCounter++]=Line_range;                         //39
+      Logdata[LogdataCounter++]=Inclining_angle;                    //40
+      Logdata[LogdataCounter++]=Intercepts;                         //41
 
    
     }
@@ -1456,11 +1458,11 @@ void processReceiveData(){
     Inclination = (Y0_2_inertia - Y0_1_inertia)/(X0_2_inertia - X0_1_inertia);//直線の方程式の傾き
     b = ((X0_2_inertia*Y0_1_inertia)/X0_1_inertia - Y0_2_inertia)/(X0_2_inertia/X0_1_inertia - 1);//直線の方程式の切片
 
-    Inclining_angle = Inclination;
+    Inclining_angle = atan(Inclination);
     Intercepts = b;
 
     Line_range = abs(b)/sqrt(Inclination*Inclination);//ラインとの距離
-    Psi = -Inclination;//ラインとの角度のずれ
+    Psi = -Inclining_angle;//ラインとの角度のずれ
 
 
     Kalman_holizontal(x_diff_dash,angle_diff,(Wp - Pbias),(Wr - Rbias),(Phi - Phi_bias));
