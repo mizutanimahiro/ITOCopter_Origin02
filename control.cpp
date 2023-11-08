@@ -1380,21 +1380,21 @@ void processReceiveData(){
     //透視変換の内部パラメータ（画像座標→カメラ座標）
     e11 = 1/fx;
     e12 = 0;
-    e13 = -cx/fy;
+    e13 = 0;
     e21 = 0;
     e22 = 1/fy;
-    e23 = -cy/fy;
+    e23 = 0;
     e31 = 0;
     e32 = 0;
     e33 = 1;
 
     //透視変換(画像座標→カメラ座標)
-    x1_camera = Kalman_alt*e11*u1_camera_dash;
-    y1_camera = Kalman_alt*e22*v1_camera_dash;
-    x2_camera = Kalman_alt*e11*u2_camera_dash;
-    y2_camera = Kalman_alt*e22*v2_camera_dash;
-    z1_camera = Kalman_alt*(e31*u1_camera + e32*v1_camera + 1);
-    z2_camera = Kalman_alt*(e31*u2_camera + e32*v2_camera + 1);
+    x1_camera = e11*u1_camera_dash/Kalman_alt;
+    y1_camera = e22*v1_camera_dash/Kalman_alt;
+    x2_camera = e11*u2_camera_dash/Kalman_alt;
+    y2_camera = e22*v2_camera_dash/Kalman_alt;
+    z1_camera = (e31*u1_camera + e32*v1_camera + 1)/Kalman_alt;
+    z2_camera = (e31*u2_camera + e32*v2_camera + 1)/Kalman_alt;
 
     //カメラ座標から機体座標への座標変換
     y1_drone = x1_camera;
