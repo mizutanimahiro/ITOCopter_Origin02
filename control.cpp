@@ -939,14 +939,13 @@ void angle_control(void)
     q2 = Xe(2,0);
     q3 = Xe(3,0);
     e11 = q0*q0 + q1*q1 - q2*q2 - q3*q3;
-    e12 = 2*(q1*q2 + q0*q3);
-    e13 = 2*(q1*q3 - q0*q2);
-    e23 = 2*(q2*q3 + q0*q1);
+    e12 = 2*(q1*q2 - q0*q3);
+    e13 = 2*(q1*q3 + q0*q2);
+    e23 = 2*(q2*q3 - q0*q1);
     e33 = q0*q0 - q1*q1 - q2*q2 + q3*q3;
     Phi = atan2(e23, e33);
     Theta = atan2(-e13, sqrt(e23*e23+e33*e33));
     Psi = atan2(e12,e11);
-    Psi = Xn_est_3;
 
     //Get angle ref (manual flight) 
     if (1)
@@ -1389,12 +1388,12 @@ void processReceiveData(){
     e33 = 1;
 
     //透視変換(画像座標→カメラ座標)
-    x1_camera = e11*u1_camera_dash/Kalman_alt;
-    y1_camera = e22*v1_camera_dash/Kalman_alt;
-    x2_camera = e11*u2_camera_dash/Kalman_alt;
-    y2_camera = e22*v2_camera_dash/Kalman_alt;
-    z1_camera = (e31*u1_camera + e32*v1_camera + 1)/Kalman_alt;
-    z2_camera = (e31*u2_camera + e32*v2_camera + 1)/Kalman_alt;
+    x1_camera = e11*u1_camera_dash*Kalman_alt;
+    y1_camera = e22*v1_camera_dash*Kalman_alt;
+    x2_camera = e11*u2_camera_dash*Kalman_alt;
+    y2_camera = e22*v2_camera_dash*Kalman_alt;
+    z1_camera = (e31*u1_camera + e32*v1_camera + 1)*Kalman_alt;
+    z2_camera = (e31*u2_camera + e32*v2_camera + 1)*Kalman_alt;
 
     //カメラ座標から機体座標への座標変換
     y1_drone = x1_camera;
@@ -1413,12 +1412,12 @@ void processReceiveData(){
     //転置後の方向余弦行列（機体座標→慣性座標）
     E11 = q0*q0 + q1*q1 + q2*q2 + q3*q3;
     E12 = 2*(q1*q2 - q0*q3);
-    E13 = 2*(q1*q3 - q0*q3);
-    E21 = 2*(q1*q2 - q0*q3);
+    E13 = 2*(q1*q3 - q0*q2);
+    E21 = 2*(q1*q2 + q0*q3);
     E22 = q0*q0 - q1*q1 + q2*q2 - q3*q2;
-    E23 = 2*(q1*q3 - q0*q1);
+    E23 = 2*(q2*q3 - q0*q1);
     E31 = 2*(q1*q3 - q0*q2);
-    E32 = 2*(q2*q3 + q0*q1);
+    E32 = 2*(q2*q3 - q0*q1);
     E33 = q0*q0 - q1*q1 - q2*q2 + q3*q3;
 
     //機体座標から慣性座標への座標変換
@@ -1453,7 +1452,7 @@ void processReceiveData(){
     Inclining_angle = atan(Inclination);
     Intercepts = b;
 
-    Line_range = abs(b)/sqrt(Inclination*Inclination);//ラインとの距離
+    Line_range = (Y0_1 + Y0_2)/2;//abs(b)/sqrt(Inclination*Inclination);//ラインとの距離
     Psi = -Inclining_angle;//ラインとの角度のずれ
 
 
