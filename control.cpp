@@ -939,9 +939,9 @@ void angle_control(void)
     q2 = Xe(2,0);
     q3 = Xe(3,0);
     e11 = q0*q0 + q1*q1 - q2*q2 - q3*q3;
-    e12 = 2*(q1*q2 - q0*q3);
-    e13 = 2*(q1*q3 + q0*q2);
-    e23 = 2*(q2*q3 - q0*q1);
+    e12 = 2*(q1*q2 + q0*q3);
+    e13 = 2*(q1*q3 - q0*q2);
+    e23 = 2*(q2*q3 + q0*q1);
     e33 = q0*q0 - q1*q1 - q2*q2 + q3*q3;
     Phi = atan2(e23, e33);
     Theta = atan2(-e13, sqrt(e23*e23+e33*e33));
@@ -1364,36 +1364,36 @@ void processReceiveData(){
     //ピクセルサイズ：2.8㎛×2.8㎛
 
     //画像座標、カメラ座標の原点を中心に移動
-    u1_camera_dash = 0.0028*u1_camera + 0.0014 - (0.0028*160)/2;
-    u2_camera_dash = 0.0028*u2_camera + 0.0014 - (0.0028*160)/2;
-    v1_camera_dash = 0.0028*v1_camera + 0.0014 - (0.0028*120)/2;
-    v2_camera_dash = 0.0028*v2_camera + 0.0014 - (0.0028*120)/2;
+    u1_camera_dash = 0.0028*u1_camera + 0.0014 - (0.0028*160.0)/2.0;
+    u2_camera_dash = 0.0028*u2_camera + 0.0014 - (0.0028*160.0)/2.0;
+    v1_camera_dash = 0.0028*v1_camera + 0.0014 - (0.0028*120.0)/2.0;
+    v2_camera_dash = 0.0028*v2_camera + 0.0014 - (0.0028*120.0)/2.0;
 
     //イメージセンサの長さ=ピクセルサイズ*受光素子数
-    fx = (160/0.336)*2.8;//(横の受光素子数/イメージセンサの横の長さ)*mm単位の焦点距離
-    fy = (120/0.448)*2.8;//(縦の受光素子数/イメージセンサの縦の長さ)*mm単位の焦点距離
+    fx = (160.0/0.336)*2.8;//(横の受光素子数/イメージセンサの横の長さ)*mm単位の焦点距離
+    fy = (120.0/0.448)*2.8;//(縦の受光素子数/イメージセンサの縦の長さ)*mm単位の焦点距離
 
     cx = 80.5*0.0028;//x軸方向の光学中心、（横のピクセル数*ピクセルサイズ）/2
     cy = 60.5*0.0028;//y軸方向の光学中心、（縦のピクセル数*ピクセルサイズ）/2
 
     //透視変換の内部パラメータ（画像座標→カメラ座標）
-    e11 = 1/fx;
-    e12 = 0;
-    e13 = 0;
-    e21 = 0;
-    e22 = 1/fy;
-    e23 = 0;
-    e31 = 0;
-    e32 = 0;
-    e33 = 1;
+    e11 = 1.0/fx;
+    e12 = 0.0;
+    e13 = 0.0;
+    e21 = 0.0;
+    e22 = 1.0/fy;
+    e23 = 0.0;
+    e31 = 0.0;
+    e32 = 0.0;
+    e33 = 1.0;
 
-    //透視変換(画像座標→カメラ座標)
+    //透視投影変換(画像座標→カメラ座標)
     x1_camera = e11*u1_camera_dash*Kalman_alt;
     y1_camera = e22*v1_camera_dash*Kalman_alt;
     x2_camera = e11*u2_camera_dash*Kalman_alt;
     y2_camera = e22*v2_camera_dash*Kalman_alt;
-    z1_camera = (e31*u1_camera + e32*v1_camera + 1)*Kalman_alt;
-    z2_camera = (e31*u2_camera + e32*v2_camera + 1)*Kalman_alt;
+    z1_camera = (e31*u1_camera + e32*v1_camera + 1.0)*Kalman_alt;
+    z2_camera = (e31*u2_camera + e32*v2_camera + 1.0)*Kalman_alt;
 
     //カメラ座標から機体座標への座標変換
     y1_drone = x1_camera;
@@ -1412,12 +1412,12 @@ void processReceiveData(){
     //転置後の方向余弦行列（機体座標→慣性座標）
     E11 = q0*q0 + q1*q1 + q2*q2 + q3*q3;
     E12 = 2*(q1*q2 - q0*q3);
-    E13 = 2*(q1*q3 - q0*q2);
-    E21 = 2*(q1*q2 + q0*q3);
+    E13 = 2*(q1*q3 + q0*q2);
+    E21 = 2*(q1*q2 - q0*q3);
     E22 = q0*q0 - q1*q1 + q2*q2 - q3*q2;
     E23 = 2*(q2*q3 - q0*q1);
     E31 = 2*(q1*q3 - q0*q2);
-    E32 = 2*(q2*q3 - q0*q1);
+    E32 = 2*(q2*q3 + q0*q1);
     E33 = q0*q0 - q1*q1 - q2*q2 + q3*q3;
 
     //機体座標から慣性座標への座標変換
@@ -1430,13 +1430,13 @@ void processReceiveData(){
     Z2_inertia = E31*x2_drone + E32*y2_drone + E33*z2_drone;
 
     //カメラから得られた2点の画像座標を慣性座標上のドローンの位置の座標
-    X0_1_inertia = 0 - X1_inertia;
-    Y0_1_inertia = 0 - Y1_inertia;
-    Z0_1_inertia = 0 - Z1_inertia;
+    X0_1_inertia = 0.0 - X1_inertia;
+    Y0_1_inertia = 0.0 - Y1_inertia;
+    Z0_1_inertia = 0.0 - Z1_inertia;
 
-    X0_2_inertia = 0 - X2_inertia;
-    Y0_2_inertia = 0 - Y2_inertia;
-    Z0_2_inertia = 0 - Z2_inertia;
+    X0_2_inertia = 0.0 - X2_inertia;
+    Y0_2_inertia = 0.0 - Y2_inertia;
+    Z0_2_inertia = 0.0 - Z2_inertia;
 
     X0_1 = X0_1_inertia;
     X0_2 = X0_2_inertia;
@@ -1477,8 +1477,8 @@ void processReceiveData(){
     printf("X1 : %5f\t,X2 : %5f\n",X0_1,X0_2);
     printf("Y1 : %5f\t,Y2 : %5f\n",Y0_1,Y0_2);
     printf("L : %8f\n",Line_range);
+    printf("q0=%8f\t,q1=%8f\t,q2=%8f\t,q3=%8f\n",q0,q1,q2,q3);
     printf("Angle : %8f\n",Inclining_angle);
-    printf("b : %8f\n",Intercepts);
     printf("\n");
   }
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
